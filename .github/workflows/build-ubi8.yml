@@ -84,9 +84,9 @@ jobs:
       version: ${{ steps.set-version.outputs.version}}
 
      
-   build-image:
+   build-go:
     runs-on: ubuntu-latest
-    name: build-image
+    name: build-go
     needs: ["setup"]
     strategy:
       matrix:
@@ -123,7 +123,30 @@ jobs:
         env:
           GOOS: ${{ steps.setup-build-step.outputs.platform_os }}
           GOARCH: ${{ steps.setup-build-step.outputs.platform_arch }}
-        run: make build
+        run: make build      
+      - name: Archive go-platform binairies
+        env:
+          GOOS: ${{ steps.setup-build-step.outputs.platform_os }}
+          GOARCH: ${{ steps.setup-build-step.outputs.platform_arch }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: kube-rbac-proxy-${{ env.GITHUB_RUN_ID	 }}-${{ env.GITHUB_RUN_NUMBER }} 
+          path: |
+            _output/kube-rbac-proxy-${{ env.GOOS }}-${{ env.GOARCH }}
+          if-no-files-found: error
+          retention-days: 1
+          
+   build-image-multiarch:
+    runs-on: ubuntu-latest
+    name: build-image-multiarch
+    needs: ["setup", "build-go"]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Download Go Binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: kube-rbac-proxy-${{ env.GITHUB_RUN_ID	 }}-${{ env.GITHUB_RUN_NUMBER }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -141,6 +164,6 @@ jobs:
             BINARY="${{ env.REPOSITORY_NAME }}-${{ steps.setup-build-step.outputs.platform_os }}-${{ steps.setup-build-step.outputs.platform_arch }}"
           context: .
           file: ./.ci/Containerfile
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ env.BUILD_PLATFORMS }}
           push: true
           tags: "${{ env.IMAGE_REPOSITORY }}:latest,${{ env.IMAGE_REPOSITORY }}:${{ env.VERSION }}"
