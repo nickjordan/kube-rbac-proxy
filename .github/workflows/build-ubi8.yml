@@ -42,21 +42,21 @@ jobs:
             echo "::set-output name=image_repository_name::${IMAGE_REPOSITORY##*/}"
             echo "::set-output name=image_registry::${IMAGE_REPOSITORY%/*}"
           fi    
-      - name: Setting Go Variables 
-        id: set-go-variables
-        run: |
-          echo "::set-output name=go_version::$(yq eval '.env.go-version' .github/workflows/build.yml)"
       - name: Build Go Cache Paths
         id: go-cache-paths
         run: |
           echo "::set-output name=go-build::$(go env GOCACHE)"
           echo "::set-output name=go-mod::$(go env GOMODCACHE)"         
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Setting Go Variables
+        id: set-go-variables
+        run: |
+          echo "::set-output name=go_version::$(yq eval '.env.go-version' .github/workflows/build.yml)"
       - name: Set up Go 1.x
         uses: actions/setup-go@v1
         with:
           go-version: ${{ steps.set-go-variables.outputs.go_version }}
-      - name: Check out code
-        uses: actions/checkout@v2
       - name: Set VERSION Variable tracking from upstream
         id: set-version
         run: echo "::set-output name=version::$(cat VERSION)"
