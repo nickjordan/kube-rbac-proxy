@@ -13,10 +13,6 @@ on:
         description: 'Registry image e.g. quay.io/redhat-cop/$repoisitory-name'
         required: false
   push:
-    branches:
-      - master
-      - main
-
     tags:        
       - v*
   
